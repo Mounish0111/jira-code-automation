@@ -9,28 +9,36 @@ JIRA_DOMAIN = os.getenv("JIRA_DOMAIN")
 JIRA_EMAIL = os.getenv("JIRA_EMAIL")
 JIRA_TOKEN = os.getenv("JIRA_TOKEN")
 
+
 def extract_text_from_adf(adf):
     text = ""
 
-    if isinstance(adf, dict):
-        for item in adf.get("content", []):
-            text += extract_text_from_adf(item)
+    if not adf or "content" not in adf:
+        return ""
 
-    elif isinstance(adf, list):
-        for item in adf:
-            text += extract_text_from_adf(item)
+    for block in adf["content"]:
+        if block["type"] == "paragraph":
+            for item in block.get("content", []):
+                if item["type"] == "text":
+                    text += item["text"]
+            text += "\n"
 
-    elif isinstance(adf, str):
-        text += adf + " "
+        elif block["type"] == "bulletList":
+            for item in block.get("content", []):
+                for sub in item.get("content", []):
+                    for txt in sub.get("content", []):
+                        if txt["type"] == "text":
+                            text += "- " + txt["text"] + "\n"
 
     return text
 
 
 def fetch_jira_ticket(issue_key):
-    print("🔥 CALLING JIRA API")
-
     url = f"{JIRA_DOMAIN}/rest/api/3/issue/{issue_key}"
+
+    print("\nDEBUG INFO:")
     print("URL:", url)
+    print("EMAIL:", JIRA_EMAIL)
 
     response = requests.get(
         url,
@@ -38,17 +46,20 @@ def fetch_jira_ticket(issue_key):
         headers={"Accept": "application/json"}
     )
 
-    print("STATUS:", response.status_code)
+    print("\nSTATUS CODE:", response.status_code)
+    print("RESPONSE TEXT:", response.text[:500])  # limit output
 
-    data = response.json()
-    fields = data.get("fields", {})
+    if response.status_code != 200:
+        raise Exception("Failed to fetch Jira issue")
 
-    description_adf = fields.get("description", {})
-    description_text = extract_text_from_adf(description_adf)
+    issue = response.json()
+
+    title = issue["fields"]["summary"]
+
+    raw_description = issue["fields"]["description"]
+    description = extract_text_from_adf(raw_description)
 
     return {
-    "title": fields.get("summary"),
-    "description": description_text
-}
-
-
+        "title": title,
+        "description": description
+    }
