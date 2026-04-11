@@ -14,23 +14,28 @@ def parse_ticket(text):
     for line in lines:
         line = line.strip()
 
-        if line.startswith("Title:"):
+        if line.lower().startswith("title:"):
             data["feature"] = line.replace("Title:", "").strip()
 
-        elif line.startswith("Description:"):
+        elif line.lower().startswith("description:"):
             capture_description = True
             capture_validation = False
             continue
 
-        elif line.startswith("Acceptance Criteria:"):
+        elif line.lower().startswith("acceptance criteria:"):
             capture_validation = True
             capture_description = False
             continue
 
-        elif capture_description and line != "":
-            data["requirements"].append(line)
+        elif capture_description:
+            if line != "":
+                data["requirements"].append(line)
 
-        elif capture_validation and line.startswith("-"):
-            data["validations"].append(line.replace("-", "").strip())
+        elif capture_validation:
+            if line.startswith(("-", "*")):
+                data["validations"].append(line[1:].strip())
+
+    if not data["feature"]:
+        data["feature"] = "Unknown Feature"
 
     return data
