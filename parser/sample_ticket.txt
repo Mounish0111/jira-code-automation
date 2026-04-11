@@ -1,8 +1,0 @@
-Title: Login API
-
-Description:
-User logs in using email and password
-
-Acceptance Criteria:
-- Email must be valid
-- Password must be at least 8 characters
