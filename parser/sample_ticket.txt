@@ -1,0 +1,7 @@
+Title: Build Login API
+Description:
+User should login using email and password.
+
+Acceptance Criteria:
+- Email must be valid
+- Password must be minimum 8 characters
